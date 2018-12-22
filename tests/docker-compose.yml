@@ -35,6 +35,29 @@ services:
     depends_on:
       - db
 
+  app2:
+    image: nextcloud:apache
+    restart: always
+    networks:
+      backend:
+        aliases:
+          - app2
+    ports:
+      - 8081:80
+    volumes:
+      - nextcloud:/var/www/html
+    environment:
+      POSTGRES_DB: 'nextcloud2'
+      POSTGRES_USER: 'postgres'
+      POSTGRES_PASSWORD: 'secret'
+      POSTGRES_HOST: 'db'
+
+      NEXTCLOUD_TRUSTED_DOMAINS: "app2"
+      NEXTCLOUD_ADMIN_USER: "admin"
+      NEXTCLOUD_ADMIN_PASSWORD: "admin"
+    depends_on:
+      - db
+
   python-api:
     build:
       context: ../
@@ -43,6 +66,11 @@ services:
       NEXTCLOUD_HOST: "app"
       NEXTCLOUD_USERNAME: "admin"
       NEXTCLOUD_PASSWORD: "admin"
+
+      NEXTCLOUD2_HOST: "app2"
+      NEXTCLOUD2_USERNAME: "admin"
+      NEXTCLOUD2_PASSWORD: "admin"
+
     networks:
       backend:
         aliases:
