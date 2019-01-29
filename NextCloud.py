@@ -863,41 +863,6 @@ class UserLDAP(WithRequester):
         "ldapDefaultPPolicyDN",
     ]
 
-    def __init__(self, *args, **kwargs):
-        super(UserLDAP, self).__init__(*args, **kwargs)
-        for key in self.CONFIG_KEYS:
-            key_name = re.sub('ldap', '', key)
-            key_name = re.sub('([a-z0-9])([A-Z])', r'\1_\2', key_name).lower()
-
-            # create and add getter method
-            getter_name = "get_ldap_{}".format(key_name)
-            exec(
-                """def {}(self, config_id):
-                    res = self.get_ldap_config(config_id)
-                    data = res['ocs']['data']
-                    return data["{}"]
-                """.format(getter_name, key)
-            )
-            getter_function = locals()[getter_name]
-
-            getter_method = types.MethodType(getter_function, self)
-            PUBLIC_API_NAME_CLASS_MAP[getter_name] = self.__class__.__name__
-            setattr(self, getter_name, getter_method)
-
-            # create and add setter method
-            setter_name = "set_ldap_{}".format(key_name)
-            exec(
-                """def {0}(self, config_id, value):
-                    res = self.edit_ldap_config(config_id, data={{"{1}": value}})
-                    return res
-                """.format(setter_name, key)
-            )
-            setter_function = locals()[setter_name]
-
-            setter_method = types.MethodType(setter_function, self)
-            PUBLIC_API_NAME_CLASS_MAP[setter_name] = self.__class__.__name__
-            setattr(self, setter_name, setter_method)
-
     @nextcloud_method
     def create_ldap_config(self):
         """ Create a new and empty LDAP configuration """
@@ -948,6 +913,38 @@ class UserLDAP(WithRequester):
 
         """
         return self.requester.delete(config_id)
+
+
+for ldap_key in UserLDAP.CONFIG_KEYS:
+    key_name = re.sub('ldap', '', ldap_key)
+    key_name = re.sub('([a-z0-9])([A-Z])', r'\1_\2', key_name).lower()
+
+    # create and add getter method
+    getter_name = "get_ldap_{}".format(key_name)
+
+    def getter_method(param):
+        def getter(self, config_id):
+            res = self.get_ldap_config(config_id)
+            data = res['ocs']['data']
+            return data[param]
+        getter.__name__ = getter_name
+        return getter
+
+    setattr(UserLDAP, getter_name, getter_method(ldap_key))
+    PUBLIC_API_NAME_CLASS_MAP[getter_name] = UserLDAP.__name__
+
+    # create and add setter method
+    setter_name = "set_ldap_{}".format(key_name)
+
+    def setter_method(param):
+        def setter(self, config_id, value):
+            res = self.edit_ldap_config(config_id, data={param: value})
+            return res
+        setter.__name__ = setter_name
+        return setter
+
+    setattr(UserLDAP, setter_name, setter_method(ldap_key))
+    PUBLIC_API_NAME_CLASS_MAP[setter_name] = UserLDAP.__name__
 
 
 class OCSCode(enum.IntEnum):

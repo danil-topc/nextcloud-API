@@ -1,4 +1,9 @@
+import re
+from unittest.mock import patch
+
 from .base import BaseTestCase
+
+from NextCloud import UserLDAP
 
 
 class TestUserLDAP(BaseTestCase):
@@ -43,5 +48,32 @@ class TestUserLDAP(BaseTestCase):
         assert res['ocs']['meta']['statuscode'] == self.SUCCESS_CODE
         res = self.nxc.get_ldap_config(config_id)
         assert res['ocs']['meta']['statuscode'] == self.NOT_FOUND_CODE
+
+    def test_ldap_setters_getters(self):
+        res = self.nxc.create_ldap_config()
+        assert res['ocs']['meta']['statuscode'] == self.SUCCESS_CODE
+        config_id = res['ocs']['data']['configID']
+
+        for ldap_key in UserLDAP.CONFIG_KEYS:
+            key_name = re.sub('ldap', '', ldap_key)
+            key_name = re.sub('([a-z0-9])([A-Z])', r'\1_\2', key_name).lower()
+
+            getter_name = "get_ldap_{}".format(key_name)
+            setter_name = "set_ldap_{}".format(key_name)
+            # test if method exist
+            assert hasattr(self.nxc, setter_name)
+            assert hasattr(self.nxc, getter_name)
+
+            # test getter
+            getter_value = getattr(self.nxc, getter_name)(config_id)
+            config_value = self.nxc.get_ldap_config(config_id)['ocs']['data'][ldap_key]
+            assert getter_value == config_value
+
+            # test setter
+            value = 1
+            with patch.object(UserLDAP, 'edit_ldap_config', return_value=1) as mock_method:
+                setter_method = getattr(self.nxc, setter_name)
+                setter_method(config_id, value)
+                mock_method.assert_called_with(config_id, data={ldap_key: value})
 
 
