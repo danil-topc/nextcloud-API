@@ -1,14 +1,21 @@
+language: python
+
 services:
   - docker
+
+python:
+  - "3.6"
 
 before_script:
   - cd tests && docker-compose up --build -d
   - until docker-compose exec --user www-data app /bin/bash -c "cp -R /tmp/groupfolders /var/www/html/custom_apps/groupfolders && php occ app:enable groupfolders"; do sleep 1; done
+  - pip3 install codecov
 
 # commands to run tests
 script:
-  - docker-compose run --rm python-api pytest
+  - docker-compose run --rm python-api python3 -m pytest --cov . --cov-report xml --cov-report term
   - docker-compose run --rm python-api python example.py
 
 after_script:
+  - codecov
   - docker-compose down -v
