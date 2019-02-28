@@ -4,7 +4,7 @@ import setuptools
 SETUPDIR = os.path.dirname(__file__)
 PKGDIR = os.path.join(SETUPDIR, 'src')
 
-with open('README.md', 'r') as f:
+with open('./README.md', 'r') as f:
     long_description = f.read()
 
 
