@@ -6,14 +6,21 @@ class GroupFolders(WithRequester):
     API_URL = "/apps/groupfolders/folders"
     SUCCESS_CODE = 100
 
-    def get_group_folders(self):
+    def get_group_folders(self, mount_point=None):
         """
-        Return a list of call configured folders and their settings
+        Return a list of call configured folders and their settings, optionally filtered by mount_point
+
+        Args:
+            mount_point (str/None): optional mount point to filter by
 
         Returns:
-
         """
-        return self.requester.get()
+        res = self.requester.get()
+        data = res.data
+        if mount_point and self.requester.json_output:
+            data = {key: value for key, value in data.items() if value['mount_point'] == mount_point}
+            res.data = data
+        return res
 
     def get_group_folder(self, fid):
         """

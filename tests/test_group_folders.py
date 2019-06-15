@@ -1,3 +1,5 @@
+import random
+
 from nextcloud.base import Permission, QUOTA_UNLIMITED
 
 from .base import BaseTestCase
@@ -45,6 +47,22 @@ class TestGroupFolders(BaseTestCase):
         res = self.nxc.get_group_folder(group_folder_id)
         assert res.is_ok
         assert res.data is False
+
+    def test_group_folder_search(self):
+        # create new group folder
+        group_folders = {}
+        folder_mount_point_base = "test_group_folders_search"
+        for i in range(5):
+            folder_mount_point = "{}_{}".format(folder_mount_point_base, i)
+            res = self.nxc.create_group_folder(folder_mount_point)
+            assert res.is_ok
+            group_folders[str(res.data['id'])] = folder_mount_point
+        folder_to_search_id = random.choice(list(group_folders.keys()))
+        folder_to_search_mount = group_folders[folder_to_search_id]
+        res = self.nxc.get_group_folders(mount_point=folder_to_search_mount)
+        assert len(res.data) == 1
+        assert list(res.data.keys())[0] == folder_to_search_id
+        assert res.data[folder_to_search_id]['mount_point'] == folder_to_search_mount
 
     def test_grant_revoke_access_to_group_folder(self):
         # create group to share with
